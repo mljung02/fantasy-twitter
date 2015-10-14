@@ -1,0 +1,27 @@
+extends layout
+
+block content
+  h1 Fantasy Twitter
+  div.main
+    div.container
+      form(action='/new' method='post')
+        div
+          label(for='name') League name
+          input(id='name' name='name')
+        div
+          label(for='players') How many participants?
+          select(name='size' id='players')
+            option 1
+            option 2
+            option 3
+            option 4
+        div
+          lable(for='duration') Duration
+          select(name='duration' id='duration')
+            option(value='2') 2 Minutes
+            option(value='5') 5 Minutes
+            option(value='30') 30 Minutes
+            option(value='60') 1 Hour
+            option(value='1440') 24 Hours
+        div
+          button(type='submit') Start League

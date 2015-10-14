@@ -6,8 +6,9 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var passport = require('passport');
 var Strategy = require('passport-twitter').Strategy;
-var session = require('express-session')
-var dbCalls = require('./lib/dbCalls.js')
+var session = require('express-session');
+var dbCalls = require('./lib/dbCalls.js');
+var socketio = require('socket.io');
 
 require('dotenv').load();
 
@@ -16,6 +17,10 @@ var users = require('./routes/users');
 
 
 var app = express();
+
+//socket.io
+var io = socketio();
+app.io = io;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -51,7 +56,12 @@ passport.deserializeUser(function(obj, cb) {
 
 // Initialize Passport and restore authentication state, if any, from the
 // session.
-app.use(session({ secret: process.env.SESSION_KEY1, resave: true, saveUninitialized: true }));
+var sessionMiddleware = session({ secret: process.env.SESSION_KEY1, resave: true, saveUninitialized: true })
+
+io.use(function(socket, next) {
+  sessionMiddleware(socket.request, socket.request.res, next);
+});
+app.use(sessionMiddleware);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -67,6 +77,18 @@ app.use(setEmailLocal);
 
 app.use('/', routes);
 app.use('/users', users);
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+  socket.on('join', function (room) {
+    console.log('join hit!?', room)
+    socket.join(room.league)
+    dbCalls.findLeague(room.league).then(function (league) {
+      socket.request.session.passport.user.displayName
+      io.sockets.in(league.id).emit('userjoin', socket.request.session.passport.user.displayName)
+    })
+  })
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

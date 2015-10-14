@@ -6,6 +6,7 @@ var passport = require('passport');
 var twitterCalls = require('../lib/twitterCalls.js')
 var dbCalls = require('../lib/dbCalls.js')
 var helpers = require('../lib/helpers.js')
+var League = require('../lib/leagues.js')
 
 var client = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -25,6 +26,32 @@ router.get('/findtrends', function (req, res, next) {
   twitterCalls.getTrends().then(function (trends) {
     var players = helpers.convertTrendsToPlayers(trends[0].trends)
     res.render('index', {players: players})
+  })
+})
+
+
+router.get('/new', function (req, res, next) {
+  res.render('new')
+})
+
+router.post('/new', function (req, res, next) {
+  twitterCalls.getTrends().then(function (trends) {
+    var id = req.user.id + Date.now();
+    var players = helpers.convertTrendsToPlayers(trends[0].trends);
+    var league = new League(id, req.body.name, req.body.duration, req.body.size);
+    league.addPlayers(players);
+    league.addUser(req.user.id);
+    dbCalls.createLeague(league).then(function () {
+      res.redirect('/draft/'+id)
+    })
+  })
+  console.log(req.body, req.user)
+})
+
+router.get('/draft/:id', function (req, res, next) {
+  dbCalls.findLeague(req.params.id).then(function (league) {
+    if (league.players)
+    res.render('draft', {league: league})
   })
 })
 
