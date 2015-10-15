@@ -19,8 +19,37 @@ var db = require('monk')(process.env.MONGOLAB_URI);
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { });
+  console.log('rendering index')
+  dbCalls.findAllLeagues().then(function (leagues) {
+    console.log(res.locals.login)
+    res.render('index', {leagues: leagues});
+  })
 });
+
+router.get('/login/twitter',
+passport.authenticate('twitter'));
+
+
+router.get('/login/twitter/return', 
+  passport.authenticate('twitter', { failureRedirect: '/login' }),
+  function(req, res) {
+    console.log('redirecting after user check!?')
+    res.redirect('/');
+});
+
+router.get('/leagues/:id', function (req, res, next) {
+  console.log('leagues show hit')
+  dbCalls.findLeague(req.params.id).then(function (league) {
+    if (!league) {
+      res.render('leagues/error', {errors: ['League not found']})
+    }
+    res.render('leagues/show', {league: league})
+  })
+})
+
+//private routes
+router.use(helpers.checkSession)
+
 
 router.get('/findtrends', function (req, res, next) {
   twitterCalls.getTrends().then(function (trends) {
@@ -36,11 +65,17 @@ router.get('/new', function (req, res, next) {
 
 router.post('/new', function (req, res, next) {
   twitterCalls.getTrends().then(function (trends) {
+    console.log(trends)
     var id = req.user.id + Date.now();
     var players = helpers.convertTrendsToPlayers(trends[0].trends);
-    var league = new League(id, req.body.name, req.body.duration, req.body.size);
+    console.log('creating league here ********************')
+    console.log(id, req.body.name, req.body.duration, req.body.size, req.body.publicLeague)
+    var league = new League(id, req.body.name, req.body.duration, req.body.size, req.body.publicLeague);
+    console.log('about to add players')
     league.addPlayers(players);
+    console.log('about to add user')
     league.addUser(req.user.id);
+    console.log('about to create league')
     dbCalls.createLeague(league).then(function () {
       res.redirect('/draft/'+id)
     })
@@ -50,23 +85,15 @@ router.post('/new', function (req, res, next) {
 
 router.get('/draft/:id', function (req, res, next) {
   dbCalls.findLeague(req.params.id).then(function (league) {
-    if (league.players)
     res.render('draft', {league: league})
   })
 })
 
-router.get('/login/twitter',
-passport.authenticate('twitter'));
-
-
-router.get('/login/twitter/return', 
-  passport.authenticate('twitter', { failureRedirect: '/login' }),
-  function(req, res) {
-    res.redirect('/');
-});
 
 router.get('/logout', function (req, res, next) {
   req.session.destroy()
   res.redirect('/')
 })
+
+
 module.exports = router;

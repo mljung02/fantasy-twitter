@@ -11,12 +11,11 @@ block content
         div
           label(for='players') How many participants?
           select(name='size' id='players')
-            option 1
             option 2
             option 3
             option 4
         div
-          lable(for='duration') Duration
+          label(for='duration') Duration
           select(name='duration' id='duration')
             option(value='2') 2 Minutes
             option(value='5') 5 Minutes
@@ -24,4 +23,8 @@ block content
             option(value='60') 1 Hour
             option(value='1440') 24 Hours
         div
+          input(type='checkbox' id='public' name='publicLeague')
+          label(for='public') Open league to public?
+        div
           button(type='submit') Start League
+  script(src='/javascripts/new.js')

@@ -9,6 +9,7 @@ var Strategy = require('passport-twitter').Strategy;
 var session = require('express-session');
 var dbCalls = require('./lib/dbCalls.js');
 var socketio = require('socket.io');
+var Room = require('./lib/Room.js')
 
 require('dotenv').load();
 
@@ -41,8 +42,10 @@ passport.use(new Strategy({
     callbackURL: "http://127.0.0.1:3000/login/twitter/return"
   },
   function(token, tokenSecret, profile, done) {
-    dbCalls.findOrCreate(profile)
-    return done(null, profile)
+    dbCalls.findOrCreate(profile).then(function (user) {
+      console.log('user creation finished')
+      return done(null, profile)
+    })
   }
 ));
 
@@ -69,8 +72,12 @@ app.use(passport.session());
 var setEmailLocal = function (req, res, next) {
   if (req.user){
     res.locals.currentUser = req.user;
+    res.locals.login = true;
+    next();
+  } else {
+    res.locals.login = false;
+    next();
   }
-  next();
 };
 
 app.use(setEmailLocal);
@@ -78,15 +85,43 @@ app.use(setEmailLocal);
 app.use('/', routes);
 app.use('/users', users);
 
-io.on('connection', function(socket){
-  console.log('a user connected');
-  socket.on('join', function (room) {
-    console.log('join hit!?', room)
-    socket.join(room.league)
-    dbCalls.findLeague(room.league).then(function (league) {
-      socket.request.session.passport.user.displayName
-      io.sockets.in(league.id).emit('userjoin', socket.request.session.passport.user.displayName)
+var draftio = io.of('/draftio');
+var indexio = io.of('/index');
+
+var Rooms = {};
+
+draftio.on('connection', function (socket) {
+  console.log('connected to a draft room')
+  if (socket.request.session.passport){
+    socket.emit('twitterName', {twitterName: socket.request.session.passport.user.displayName})
+  }
+  socket.on('join', function (data) {
+    var room
+    if (Rooms[data.leagueId]) {
+      room = Rooms[data.leagueId]
+    } else {
+      Rooms[data.leagueId] = new Room(data.leagueId)
+      room = Rooms[data.leagueId]
+    }
+    socket.join(room.leagueId)
+    var add = true;
+    room.users.forEach(function (user) {
+      if(user === data.twitterName) {add = false};
     })
+    if (add) room.addUser(data.twitterName)
+    console.log('join hit!?', room, add)
+    draftio.to(room.leagueId).emit('draftInfo', room)
+  })
+})
+
+indexio.on('connection', function(socket){
+  console.log('a user connected to index');
+  if (socket.request.session.passport){
+    socket.emit('new join', socket.request.session.passport.user.displayName + ' has joined the room.')
+  }
+  socket.on('chat message', function (msg) {
+    console.log('message: ', msg);
+    socket.emit('chat message', msg);
   })
 });
 

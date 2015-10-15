@@ -1,16 +1,18 @@
 extends layout
 
 block content
-  h1 Fantasy Twitter
   div.main
     div.container
-      p= league.name
-      p= league.id
-      p= league.size
-      p= league.duration
-      div
-        each player in league.players
-          li
-            a(href=player.url)= player.name
-      div#users
+      h1 Fantasy Twitter
+      div.left
+        p= league.name
+        p= league.id
+        p= league.size
+        p= league.duration
+        div
+          each player in league.players
+            li
+              a(href=player.url)= player.name
+      div.right
+        ul#users
   script(src='/javascripts/draft.js')

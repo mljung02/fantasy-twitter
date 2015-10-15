@@ -1,15 +1,25 @@
 extends layout
 
 block content
-  h1 Fantasy Twitter
   div.main
-    div.container
-      a(href='/new') New League
-      a(href='/findtrends') Get Twitter Trends
-      div.usTrends
-      div.globalTrends
-        if players
-          ul
-            for player in players
-              li
-                a(href=player.url)= player.name
+    div.container#container
+      div.col-md-8
+        h1 Fantasy Twitter
+        a(href='/new') New League
+        p
+        div.left
+          if leagues
+            ul
+              each league in leagues
+                li
+                  a(href='/draft/'+league.id)= league.name + " draft"
+                li
+                  a(href='/leagues/'+league.id)= league.name
+      div.col-md-4#chatdiv
+        div#messagediv
+          ul#messages
+            li asdfhsdoifha
+        form#chat(action='')
+          input#message(autocomplete='off')
+          button Send    
+  script(src='/javascripts/app.js')
