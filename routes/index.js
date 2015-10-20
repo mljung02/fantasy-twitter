@@ -20,8 +20,7 @@ var db = require('monk')(process.env.MONGOLAB_URI);
 /* GET home page. */
 router.get('/', function(req, res, next) {
   console.log('rendering index')
-  dbCalls.findAllLeagues().then(function (leagues) {
-    console.log(res.locals.login)
+  dbCalls.findPublicLeagues().then(function (leagues) {
     res.render('index', {leagues: leagues});
   })
 });
@@ -85,6 +84,9 @@ router.post('/new', function (req, res, next) {
 
 router.get('/draft/:id', function (req, res, next) {
   dbCalls.findLeague(req.params.id).then(function (league) {
+    if (league.status > 0) {
+      res.redirect('/leagues/'+req.params.id)
+    }
     res.render('draft', {league: league})
   })
 })

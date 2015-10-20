@@ -3,16 +3,39 @@ extends layout
 block content
   div.main
     div.container
-      h1 Fantasy Twitter
-      div.left
-        p= league.name
-        p= league.id
-        p= league.size
-        p= league.duration
-        div
-          each player in league.players
-            li
-              a(href=player.url)= player.name
-      div.right
-        ul#users
+      h1 Fantasy Draft
+      div.col-md-6#draft
+        div#predraft
+          button#start_draft(disabled) Start Draft
+          span#ready_users 
+            i Not enough users to start draft.
+          p= league.name
+          p= league.id
+          p= league.size
+          p= league.duration
+          div
+            ul
+              each player in league.players
+                li
+                  a(href=player.url)= player.name
+        div#active_draft(style= 'display: none')
+          form(class='form-horizontal' role='form' name='draft' action='')
+            div.form-group
+              select.form-control#players(size=10)
+                each player in league.players
+                  option= player.name
+          button#pick() Pick Selected Topic
+      div.col-md-6#chatdiv
+        p#users
+        div#messagediv
+          if !login
+            span Please log in to chat.
+          ul#messages
+        div#chat_submit
+          form#chat(action='')
+            input#message_input(autocomplete='off')
+            button#message_button Send
+      .row
+        div.col-md-3#myteam
+          p yo
   script(src='/javascripts/draft.js')

@@ -10,6 +10,7 @@ var session = require('express-session');
 var dbCalls = require('./lib/dbCalls.js');
 var socketio = require('socket.io');
 var Room = require('./lib/Room.js')
+var helpers = require('./lib/helpers.js')
 
 require('dotenv').load();
 
@@ -88,42 +89,78 @@ app.use('/users', users);
 var draftio = io.of('/draftio');
 var indexio = io.of('/index');
 
+//INDEX IO
+indexio.on('connection', function(socket){
+  console.log('a user connected to index');
+  if (socket.request.session.passport){
+    indexio.emit('new join', socket.request.session.passport.user.username + ' has joined the room.')
+    socket.on('disconnect', function () {
+      indexio.emit('new join', socket.request.session.passport.user.username + ' has disconnected')
+    })
+  }
+  socket.on('chat message', function (msg) {
+    console.log('message: ', msg);
+    indexio.emit('chat message', socket.request.session.passport.user.username + ': ' + msg);
+  })
+});
+
+
+//DRAFT IO
 var Rooms = {};
 
 draftio.on('connection', function (socket) {
   console.log('connected to a draft room')
   if (socket.request.session.passport){
-    socket.emit('twitterName', {twitterName: socket.request.session.passport.user.displayName})
+    socket.emit('twitterName', {twitterName: socket.request.session.passport.user.username})
+    draftio.emit('new join', socket.request.session.passport.user.username + ' has joined the room.')
+    socket.on('disconnect', function () {
+      draftio.emit('new join', socket.request.session.passport.user.username + ' has disconnected')
+    })
   }
   socket.on('join', function (data) {
-    var room
-    if (Rooms[data.leagueId]) {
-      room = Rooms[data.leagueId]
-    } else {
-      Rooms[data.leagueId] = new Room(data.leagueId)
-      room = Rooms[data.leagueId]
-    }
-    socket.join(room.leagueId)
-    var add = true;
-    room.users.forEach(function (user) {
-      if(user === data.twitterName) {add = false};
+    socket.join(data.leagueId)
+    dbCalls.findLeague(data.leagueId).then(function (league) {
+      console.log('connected to draft: ' + data.leagueId)
+      var room
+      console.log('if Room', Rooms, data.leagueId, league)
+      if (Rooms[data.leagueId]) {
+        console.log('room exists')
+        room = Rooms[data.leagueId];
+      } else {
+        console.log('room Created')
+        Rooms[data.leagueId] = new Room(data.leagueId, league);
+        room = Rooms[data.leagueId];
+        room.draftOrderGenerate();
+      }
+      socket.join(room.leagueId)
+      helpers.uniquePush(data.twitterName, room.users)
+      console.log('join hit')
+      draftio.to(room.leagueId).emit('draftInfo', room)
     })
-    if (add) room.addUser(data.twitterName)
-    console.log('join hit!?', room, add)
-    draftio.to(room.leagueId).emit('draftInfo', room)
+    socket.on('ready', function (data) {
+      console.log(data.leagueId, 'ready hit', Rooms[data.leagueId])
+      helpers.uniquePush(socket.request.session.passport.user.username, Rooms[data.leagueId].ready)
+      socket.join(data.leagueId)
+      draftio.to(data.leagueId).emit('draftInfo', Rooms[data.leagueId])
+      draftio.to(data.leagueId).emit('chat message', socket.request.session.passport.user.username + ' is ready to start!')
+    })
+    socket.on('chat message', function (data) {
+      console.log('message: ', data.msg);
+      socket.join(data.leagueId)
+      draftio.to(data.leagueId).emit('chat message', socket.request.session.passport.user.username + ': ' + data.msg);
+    })
+    socket.on('start', function (data) {
+      console.log('start going')
+      Rooms[data.leagueId].activate()
+      socket.join(data.leagueId)
+      draftio.to(data.leagueId).emit('draftInfo', Rooms[data.leagueId])
+      draftio.to(data.leagueId).emit('chat message', 'The Draft has begun. ');
+    })
+    socket.on('pick', function (data) {
+      Rooms[data.leagueId]
+    })
   })
 })
-
-indexio.on('connection', function(socket){
-  console.log('a user connected to index');
-  if (socket.request.session.passport){
-    socket.emit('new join', socket.request.session.passport.user.displayName + ' has joined the room.')
-  }
-  socket.on('chat message', function (msg) {
-    console.log('message: ', msg);
-    socket.emit('chat message', msg);
-  })
-});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

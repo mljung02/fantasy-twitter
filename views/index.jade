@@ -3,23 +3,26 @@ extends layout
 block content
   div.main
     div.container#container
-      div.col-md-8
+      div.col-md-6
         h1 Fantasy Twitter
-        a(href='/new') New League
-        p
-        div.left
-          if leagues
-            ul
-              each league in leagues
-                li
-                  a(href='/draft/'+league.id)= league.name + " draft"
-                li
-                  a(href='/leagues/'+league.id)= league.name
-      div.col-md-4#chatdiv
+        if !login
+          p Please log in if you wish to start or join a league.
+        else
+          a(href='/new') New League
+          p
+          div
+            if leagues
+              ul
+                each league in leagues
+                  li
+                    a(href='/draft/'+league.id)= league.name + " draft"
+      div.col-md-6#chatdiv
         div#messagediv
+          if !login
+            span Please log in to chat.
           ul#messages
-            li asdfhsdoifha
-        form#chat(action='')
-          input#message(autocomplete='off')
-          button Send    
+        div#chat_submit
+          form#chat(action='')
+            input#message_input(autocomplete='off')
+            button#message_button(disabled) Send    
   script(src='/javascripts/app.js')

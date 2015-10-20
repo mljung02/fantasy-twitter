@@ -1,12 +1,12 @@
 extends layout
 
 block content
-  h1 Fantasy Twitter
   div.main
     div.container
+      h1 League Settings
       form(action='/new' method='post')
         div
-          label(for='name') League name
+          label(for='name') League name: 
           input(id='name' name='name')
         div
           label(for='players') How many participants?
@@ -24,7 +24,7 @@ block content
             option(value='1440') 24 Hours
         div
           input(type='checkbox' id='public' name='publicLeague')
-          label(for='public') Open league to public?
+          label(for='public') Make this league public.
         div
           button(type='submit') Start League
   script(src='/javascripts/new.js')
