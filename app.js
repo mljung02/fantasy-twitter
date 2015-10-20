@@ -11,12 +11,20 @@ var dbCalls = require('./lib/dbCalls.js');
 var socketio = require('socket.io');
 var Room = require('./lib/Room.js')
 var helpers = require('./lib/helpers.js')
+var Twitter = require('twitter');
+
 
 require('dotenv').load();
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
+var client = new Twitter({
+  consumer_key: process.env.TWITTER_CONSUMER_KEY,
+  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+  access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+});
 
 var app = express();
 
@@ -86,8 +94,28 @@ app.use(setEmailLocal);
 app.use('/', routes);
 app.use('/users', users);
 
+var showio = io.of('/showio');
 var draftio = io.of('/draftio');
 var indexio = io.of('/index');
+
+//SHOW IO
+showio.on('connection', function (socket) {
+  socket.on('players', function (data) {
+    var team1score = 0
+    var team2score = 0
+    var team1 = data.slice(0,4)
+    var team2 = data.slice(5,9)
+    client.stream('statuses/filter', {track: data.join(',')}, function(stream) {
+      stream.on('data', function(tweet) {
+        
+        console.log(tweet.text, i);
+      });
+      stream.on('error', function(error) {
+        throw error;
+      });
+    });
+  })  
+})
 
 //INDEX IO
 indexio.on('connection', function(socket){
@@ -118,24 +146,23 @@ draftio.on('connection', function (socket) {
     })
   }
   socket.on('join', function (data) {
+    console.log('join hit')
     socket.join(data.leagueId)
+    var roomIn;
     dbCalls.findLeague(data.leagueId).then(function (league) {
-      console.log('connected to draft: ' + data.leagueId)
-      var room
-      console.log('if Room', Rooms, data.leagueId, league)
-      if (Rooms[data.leagueId]) {
-        console.log('room exists')
-        room = Rooms[data.leagueId];
-      } else {
-        console.log('room Created')
-        Rooms[data.leagueId] = new Room(data.leagueId, league);
-        room = Rooms[data.leagueId];
-        room.draftOrderGenerate();
-      }
-      socket.join(room.leagueId)
-      helpers.uniquePush(data.twitterName, room.users)
-      console.log('join hit')
-      draftio.to(room.leagueId).emit('draftInfo', room)
+      roomIn = new Room(data.leagueId, league)
+      roomIn.draftOrderGenerate();
+      dbCalls.findOrCreateRoom(data.leagueId, roomIn).then(function (room) {
+        Rooms[data.leagueId] = room
+        Rooms[data.leagueId].__prot__ = Room.prototype
+        console.log(Rooms[data.leagueId], 'before push')
+        socket.join(room.leagueId)
+        helpers.uniquePush(data.twitterName, Rooms[data.leagueId].users)
+        console.log('before generate')
+        dbCalls.updateRoom(Rooms[data.leagueId]).then(function () {
+          draftio.to(room.leagueId).emit('draftInfo', Rooms[data.leagueId])
+        })
+      })
     })
     socket.on('ready', function (data) {
       console.log(data.leagueId, 'ready hit', Rooms[data.leagueId])
@@ -150,14 +177,55 @@ draftio.on('connection', function (socket) {
       draftio.to(data.leagueId).emit('chat message', socket.request.session.passport.user.username + ': ' + data.msg);
     })
     socket.on('start', function (data) {
-      console.log('start going')
-      Rooms[data.leagueId].activate()
+      console.log('start going', Rooms[data.leagueId])
+      Rooms[data.leagueId].__proto__ = Room.prototype;
+      var userId = socket.request.session.passport.user.username;
       socket.join(data.leagueId)
       draftio.to(data.leagueId).emit('draftInfo', Rooms[data.leagueId])
-      draftio.to(data.leagueId).emit('chat message', 'The Draft has begun. ');
+      if (!Rooms[data.leagueId].active){
+        console.log('start not active__________________________________________________', Rooms[data.leagueId].active)
+        Rooms[data.leagueId].activate()
+        dbCalls.updateRoom(Rooms[data.leagueId]).then(function (room) {
+          draftio.to(data.leagueId).emit('chat message', 'The Draft has begun. ');
+          console.log(Rooms[data.leagueId].whosTurn(userId))
+          draftio.to(data.leagueId).emit('turn', {turn: Rooms[data.leagueId].whosTurn(userId)})
+        })
+      }
     })
     socket.on('pick', function (data) {
-      Rooms[data.leagueId]
+      var userId = socket.request.session.passport.user.username;
+      Rooms[data.leagueId].turn++;
+      console.log('before pick push', Rooms[data.leagueId].league.teams[userId])
+      Rooms[data.leagueId].league.teams[userId].members.push(data.pick);
+      console.log('after pick push')
+      delete Rooms[data.leagueId].league.players[data.pick];
+      if (Rooms[data.leagueId].turn === Rooms[data.leagueId].draftorder.length){
+        Rooms[data.leagueId].league.status = 1;
+        socket.join(data.leagueId)
+        console.log('finished!', data.leagueId, Rooms[data.leagueId].league)
+        dbCalls.updateLeague({id: data.leagueId}, Rooms[data.leagueId].league).then(function () {
+          draftio.to(data.leagueId).emit('finished', data.leagueId)
+        })
+      } 
+      dbCalls.updateRoom(Rooms[data.leagueId]).then(function () {
+        if (Rooms[data.leagueId].league.status === 0){
+          socket.join(data.leagueId)
+          draftio.to(data.leagueId).emit('draftInfo', Rooms[data.leagueId])
+          draftio.to(data.leagueId).emit('chat message', userId + " has picked " + data.pick)
+          draftio.to(data.leagueId).emit('pick', {pick: data.pick, turn: Rooms[data.leagueId].whosTurn()})
+          draftio.to(data.leagueId).emit('turn', {turn: Rooms[data.leagueId].whosTurn(userId)})
+        }
+      })
+    })
+    socket.on('turn', function (data) {
+      var userId = socket.request.session.passport.user.username;
+      console.log('at turn', data, userId)
+      dbCalls.findRoom(data.leagueId).then(function (room) {
+        socket.join(data.leagueId)
+        Rooms[data.leagueId] = room;
+        Rooms[data.leagueId].__proto__ = Room.prototype;
+        draftio.to(data.leagueId).emit('turn', {turn: Rooms[data.leagueId].whosTurn(userId)})
+      })
     })
   })
 })

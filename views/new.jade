@@ -23,8 +23,8 @@ block content
             option(value='60') 1 Hour
             option(value='1440') 24 Hours
         div
-          input(type='checkbox' id='public' name='publicLeague')
-          label(for='public') Make this league public.
+          input(type='checkbox' id='public' name='publicLeague' checked hidden)
+          //- label(for='public') Make this league public.
         div
           button(type='submit') Start League
   script(src='/javascripts/new.js')

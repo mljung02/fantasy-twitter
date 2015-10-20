@@ -1,6 +1,16 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,400italic);
 body {
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
+  color: #292f33;
+  background-color: #f5f8fa;
 }
+
+button {
+  border-radius: 5px;
+  color: #f5f8fa;
+  background-color: #0084b4;
+}
+
 
 a {
   color: #00B7FF;
@@ -12,7 +22,7 @@ html, body{
 
 #messagediv {
   height: 600px;
-  border: 1px solid black;
+  border: 1px solid #e1e8ed;
   padding: 0px;
   overflow: auto;
 }
@@ -27,10 +37,15 @@ html, body{
 }
 
 #message_input {
-  border: 1px solid black; padding: 10px; width: 85%;
+  border: 1px solid #e1e8ed; padding: 10px; width: 85%;
 }
 #message_button {
-  width: 15%; background: rgb(130, 224, 255); border: 1px solid black; padding: 10px;
+  color: #f5f8fa;
+  background-color: #0084b4;
+  width: 15%;
+  border: 1px solid #e1e8ed; 
+  padding: 10px;
+  border-radius: 5px;
 }
 
 button:disabled {
@@ -43,4 +58,51 @@ button:disabled {
 
 select option {
   font-size: 150%;
+}
+
+.navbar-inverse {
+  background-color: rgb(255, 255, 255);
+  border: none;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+#messagediv, #message_input {
+  background-color: #fff;
+  border-radius: 5px
+}
+
+a {
+  color: #0084B4;
+  font-weight: bold;
+}
+
+.navbar-inverse button {
+  color: #f5f8fa;
+  background-color: #0084b4;
+}
+
+.navbar-inverse input {
+  color: #f5f8fa;
+  background-color: #0084b4;
+}
+
+.navbar-inverse img {
+  border-radius: 5px;
+}
+
+#currentTurn {
+  float: right;
+}
+
+#myTeam {
+  padding-top: 0px;
+  padding-left: 20px;
+}
+
+#myTeam li {
+  margin: 0 auto;
+}
+
+.padding-6{
+  padding: 5px;
 }

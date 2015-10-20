@@ -37,10 +37,13 @@ router.get('/login/twitter/return',
 });
 
 router.get('/leagues/:id', function (req, res, next) {
-  console.log('leagues show hit')
   dbCalls.findLeague(req.params.id).then(function (league) {
     if (!league) {
       res.render('leagues/error', {errors: ['League not found']})
+    }
+    console.log(league.teams)
+    for (team in league.teams){
+      console.log(team)
     }
     res.render('leagues/show', {league: league})
   })
