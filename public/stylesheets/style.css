@@ -106,3 +106,28 @@ a {
 .padding-6{
   padding: 5px;
 }
+
+.playerScore {
+  border: 1px solid black;
+  border-radius: 5px;
+  list-style-type: none;
+  padding: 5px;
+}
+
+.center {
+  margin: auto;
+  text-align: center;
+}
+
+.inner {
+  border-top: 1px solid black;
+  padding-top:2px;
+}
+
+.score {
+  float: right;
+}
+
+.totalScore {
+  text-align: center;
+}

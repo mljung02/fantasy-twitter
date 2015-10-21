@@ -3,12 +3,16 @@ extends ../layout
 block content
   div.main
     div.container
-      h1= league.name
+      h1.center= league.name
       each team in league.teams
         div.col-md-6
-          h2 team.teamName
+          h2.center= team.teamName
           h3
             ul
               each player in team.members
-                li= player
+                div
+                  div.playerScore.expander= player
+                    span.score 0
+                    div.content.inner(style='display: none')
+          h2.totalScore 0
   script(src='/javascripts/show.js')

@@ -101,14 +101,16 @@ var indexio = io.of('/index');
 //SHOW IO
 showio.on('connection', function (socket) {
   socket.on('players', function (data) {
-    var team1score = 0
-    var team2score = 0
-    var team1 = data.slice(0,4)
-    var team2 = data.slice(5,9)
+    console.log('players', data)
+    var scores
+    // console.log(scores)
     client.stream('statuses/filter', {track: data.join(',')}, function(stream) {
+      console.log('stream initiated')
       stream.on('data', function(tweet) {
-        
-        console.log(tweet.text, i);
+        if (helpers.scorePerson(data, tweet.text)) {
+          console.log(helpers.scorePerson(data, tweet.text))
+          socket.emit('scores', helpers.scorePerson(data, tweet.text))
+        }
       });
       stream.on('error', function(error) {
         throw error;
