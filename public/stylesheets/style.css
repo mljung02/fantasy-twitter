@@ -131,3 +131,9 @@ a {
 .totalScore {
   text-align: center;
 }
+
+.inner {
+  max-height: 200px;
+  overflow: hidden;
+  font-size: 50%
+}

@@ -11,13 +11,15 @@ console.log(playersUp)
 socket.emit('players', playersUp)
 
 socket.on('scores', function (data) {
-  console.log(data)
   for (var i = 0; i < $('.playerScore').length; i++) {
-    if (data === $('.playerScore')[i].innerText.slice(0, -1) ||
-        data === $('.playerScore')[i].innerText.slice(0, -2) ||
-        data === $('.playerScore')[i].innerText.slice(0, -3) ||
-        data === $('.playerScore')[i].innerText.slice(0, -4)) {
+    if (data.player === $('.playerScore')[i].id) {
       $('.playerScore')[i].children[0].innerText++
+      var p = document.createElement("P")
+      p.innerHTML = data.tweet
+      var node = $('.playerScore')[i].children[1]
+      console.log('before insert', data.tweet, node.childNodes[0])
+      node.insertBefore(p, node.childNodes[0])
+      console.log('after insert')
       if (i < 5){
         $('.totalScore')[0].innerText++
       } else {
@@ -27,4 +29,4 @@ socket.on('scores', function (data) {
   }
 })
 
-// $('.expander').simpleexpand();
+$('.expander').simpleexpand();

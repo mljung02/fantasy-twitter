@@ -78,7 +78,9 @@ router.post('/new', function (req, res, next) {
     console.log('about to add user')
     league.addUser(req.user.id);
     console.log('about to create league')
-    dbCalls.createLeague(league).then(function () {
+    dbCalls.createLeague(league).then(function (response) {
+      console.log("RESPONSE");
+      console.log(response);
       console.log('league created')
       res.redirect('/draft/'+id)
     })

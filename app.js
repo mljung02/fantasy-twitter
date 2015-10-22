@@ -205,6 +205,7 @@ draftio.on('connection', function (socket) {
         Rooms[data.leagueId].league.status = 1;
         socket.join(data.leagueId)
         console.log('finished!', data.leagueId, Rooms[data.leagueId].league)
+        Rooms[data.leagueId].league.start = Date.now();
         dbCalls.updateLeague({id: data.leagueId}, Rooms[data.leagueId].league).then(function () {
           draftio.to(data.leagueId).emit('finished', data.leagueId)
         })

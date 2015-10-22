@@ -11,7 +11,7 @@ block content
             ul
               each player in team.members
                 div
-                  div.playerScore.expander= player
+                  div.playerScore.expander(id='#{player}')= player
                     span.score 0
                     div.content.inner(style='display: none')
           h2.totalScore 0
